@@ -1,28 +1,33 @@
 <template>
-  <div id="app">
-    <img alt="Vue logo" src="./assets/logo.png">
-    <HelloWorld msg="Welcome to Your Vue.js App"/>
-  </div>
+  <el-container id="app">
+    <el-header>
+      标注系统
+      <el-menu class="el-menu-demo" mode="horizontal" @select="menuSelect" background-color="#545c64" text-color="#fff"
+               active-text-color="#ffd04b">
+        <el-menu-item index="menu">菜单栏</el-menu-item>
+        <el-menu-item index="sequence-tag">NER标注</el-menu-item>
+      </el-menu>
+    </el-header>
+    <el-main style="height: 100%">
+      <router-view/>
+    </el-main>
+  </el-container>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
-
 export default {
   name: 'App',
-  components: {
-    HelloWorld
+  methods: {
+    menuSelect(index, indexPath) {
+      console.log(index, indexPath)
+      this.$router.push(index);
+    }
   }
 }
 </script>
 
-<style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
+<style scoped>
+.el-container {
+  height: 100%;
 }
 </style>
