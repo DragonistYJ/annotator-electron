@@ -2,7 +2,7 @@
   <el-row type="flex"
           @mouseenter.native="closeShow = true"
           @mouseleave.native="closeShow = false">
-    <el-col :span="22" style="font-size: 0.9em">
+    <el-col :span="22" style="font-size: 0.9em" @click.native="openFile">
       {{ filename }}
     </el-col>
     <el-col :span="2" v-if="closeShow"
@@ -28,10 +28,11 @@ export default {
   },
   methods: {
     ...mapMutations({
-      removeFilename: 'sequenceTag/removeFilename'
+      removeFilename: 'sequenceTag/removeFilename',
+      changeCurrentFile: 'sequenceTag/changeCurrentFile'
     }),
     openFile() {
-      console.log("dfsdfs");
+      this.changeCurrentFile(this.filepath);
     }
   }
 }

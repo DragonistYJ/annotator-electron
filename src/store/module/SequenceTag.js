@@ -1,9 +1,17 @@
 const state = {
     isSideBarCollapse: false,
-    fileList: []
+    fileList: [],
+    currentFile: "",
+    currentTag: "other"
 }
 
 const mutations = {
+    changeCurrentTag(state, payload) {
+        state.currentTag = payload;
+    },
+    changeCurrentFile(state, payload) {
+        state.currentFile = payload;
+    },
     collapseSideBar(state, payload) {
         state.isSideBarCollapse = payload;
     },
