@@ -1,14 +1,16 @@
 <template>
   <el-row type="flex" style="margin-bottom: 1em" align="middle">
-    <div class="word" v-for="(item,idx) in tokens" :key="idx">
-      <el-button type="text" @click="wordClick(item)"
-                 style="color: #000000; font-size: 1em; padding: 0">
-        {{ item.word }}
-      </el-button>
-      <el-tag v-if="item.tag !== 'other'" type="info">
-        {{ item.tag }}
-      </el-tag>
-    </div>
+    <el-col style="display: flex; flex-wrap: wrap">
+      <div class="word" v-for="(item,idx) in tokens" :key="idx">
+        <el-button type="text" @click="wordClick(item)"
+                   style="color: #000000; font-size: 1em; padding: 0">
+          {{ item.word }}
+        </el-button>
+        <el-tag v-if="item.tag !== 'other'" type="info">
+          {{ item.tag }}
+        </el-tag>
+      </div>
+    </el-col>
   </el-row>
 </template>
 

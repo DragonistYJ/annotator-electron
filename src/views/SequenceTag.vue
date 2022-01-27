@@ -21,7 +21,7 @@
           </el-col>
         </el-row>
 
-        <Sentence v-for="(item, idx) in document" :key="idx" :tokens="item"/>
+        <Sentence v-for="(item, idx) in documentShowed" :key="idx" :tokens="item"/>
 
         <el-row type="flex" justify="center" align="middle">
           <el-col :span="20">
@@ -71,7 +71,11 @@ export default {
       fileList: state => state.sequenceTag.fileList,
       currentFile: state => state.sequenceTag.currentFile,
       currentTag: state => state.sequenceTag.currentTag
-    })
+    }),
+    documentShowed: function () {
+      let start = (this.documentPage - 1) * this.documentPageSize;
+      return this.document.slice(start, start + this.documentPageSize);
+    }
   },
   methods: {
     ...mapMutations({
@@ -117,14 +121,13 @@ export default {
           });
         }
       })
-      console.log(this.document);
     }
   },
   watch: {
     currentFile(newVal) {
       const fs = require('fs');
       fs.readFile(newVal, 'utf8', (err, data) => {
-        this.document = JSON.parse(data).document;
+        this.document = JSON.parse(data);
       });
     }
   }
