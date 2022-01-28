@@ -57,13 +57,18 @@
                 :total="document.length">
             </el-pagination>
           </el-col>
-          <el-col :span="3">
-            <el-button type="success" @click="commitChange">
+          <el-col :span="2">
+            <el-button type="success" @click="commitChange" size="small">
               提交修改
             </el-button>
           </el-col>
-          <el-col :span="3">
-            <el-button type="primary" @click="statisticsShow = true">
+          <el-col :span="2">
+            <el-button type="primary" @click="saveAnotherPlace" size="small">
+              另存为
+            </el-button>
+          </el-col>
+          <el-col :span="2">
+            <el-button type="primary" @click="statisticsShow = true" size="small">
               标注统计
             </el-button>
           </el-col>
@@ -75,7 +80,7 @@
           :visible.sync="statisticsShow"
           direction="rtl">
         <el-descriptions :column="1" border style="margin: 1em">
-          <el-descriptions-item v-for="(value, key, index) in statistics" :key="index">
+          <el-descriptions-item v-for="(value, key, index) in currentStatistics" :key="index">
             <template slot="label">
               {{ key }}
             </template>
@@ -91,6 +96,8 @@
 import {mapMutations, mapState} from 'vuex';
 import {ipcRenderer} from "electron";
 import Sentence from "@/components/sequence-tag/Sentence";
+import fs from "fs";
+import path from "path";
 
 export default {
   name: "SequenceTag",
@@ -102,7 +109,6 @@ export default {
       documentPage: 1,
       documentPageSize: 10,
       document: [],
-      statistics: {},
       tags: ['other', 'url', 'email', 'domain', 'ipv4', 'hash', 'mac_address', 'file_path',
         'registry_key_path', 'cve', 'asn', 'bitcoin_address', 'attack']
     }
@@ -113,6 +119,7 @@ export default {
       fileList: state => state.sequenceTag.fileList,
       currentFile: state => state.sequenceTag.currentFile,
       currentTag: state => state.sequenceTag.currentTag,
+      currentStatistics: state => state.sequenceTag.currentStatistics
     }),
     documentShowed: function () {
       let start = (this.documentPage - 1) * this.documentPageSize;
@@ -126,7 +133,8 @@ export default {
       addFilename: 'sequenceTag/addFilename',
       removeFilename: 'sequenceTag/removeFilename',
       changeCurrentTag: 'sequenceTag/changeCurrentTag',
-      changeCurrentFile: 'sequenceTag/changeCurrentFile'
+      changeCurrentFile: 'sequenceTag/changeCurrentFile',
+      changeStatistics: 'sequenceTag/changeStatistics'
     }),
     pageSizeChange(size) {
       this.documentPageSize = size;
@@ -136,9 +144,6 @@ export default {
     },
     selectDir() {
       ipcRenderer.invoke("selectDir").then(result => {
-        const fs = require('fs');
-        const path = require("path");
-
         let state = fs.lstatSync(result);
         if (state.isDirectory()) {
           this.clearFileList();
@@ -154,8 +159,10 @@ export default {
       this.changeCurrentTag(tag);
     },
     commitChange() {
-      const fs = require('fs');
-      fs.writeFile(this.currentFile, JSON.stringify(this.document), 'utf8', err => {
+      fs.writeFile(this.currentFile, JSON.stringify({
+        document: this.document,
+        statistics: this.currentStatistics
+      }), 'utf8', err => {
         if (!err) {
           this.$message({
             showClose: true,
@@ -164,15 +171,41 @@ export default {
           });
         }
       })
+    },
+    saveAnotherPlace() {
+      this.commitChange();
+
+      ipcRenderer.invoke("selectDir").then(result => {
+        let dirname = result;
+        let state = fs.lstatSync(result);
+        if (state.isFile()) {
+          dirname = path.dirname(result);
+        }
+        fs.writeFile(path.join(dirname, path.basename(this.currentFile)), JSON.stringify({
+          document: this.document,
+          statistics: this.currentStatistics
+        }), 'utf8', err => {
+          if (!err) {
+            this.removeFilename({'filename': path.basename(this.currentFile), 'filepath': this.currentFile})
+            this.$message({
+              showClose: true,
+              message: '另存成功',
+              type: 'success'
+            });
+          }
+        })
+      })
     }
   },
   watch: {
     currentFile(newVal) {
+      this.documentPage = 1;
+
       const fs = require('fs');
       fs.readFile(newVal, 'utf8', (err, result) => {
         let data = JSON.parse(result);
         this.document = data.document;
-        this.statistics = data.statistics;
+        this.changeStatistics(data.statistics);
       });
     }
   }

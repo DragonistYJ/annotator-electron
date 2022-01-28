@@ -6,7 +6,7 @@
                    style="color: #000000; font-size: 1em; padding: 0">
           {{ item.word }}
         </el-button>
-        <el-tag v-if="item.tag !== 'other'" type="info">
+        <el-tag v-if="item.tag !== 'other'" type="success">
           {{ item.tag }}
         </el-tag>
       </div>
@@ -15,7 +15,7 @@
 </template>
 
 <script>
-import {mapState} from "vuex";
+import {mapMutations, mapState} from "vuex";
 
 export default {
   name: "Sentence",
@@ -24,11 +24,18 @@ export default {
   },
   computed: {
     ...mapState({
-      currentTag: state => state.sequenceTag.currentTag
+      currentTag: state => state.sequenceTag.currentTag,
+      currentStatistics: state => state.sequenceTag.currentStatistics
     })
   },
   methods: {
+    ...mapMutations({
+      addStatistics: 'sequenceTag/addStatistics',
+      subStatistics: 'sequenceTag/subStatistics'
+    }),
     wordClick(token) {
+      this.addStatistics(this.currentTag);
+      this.subStatistics(token.tag);
       token.tag = this.currentTag;
     }
   }

@@ -2,7 +2,8 @@ const state = {
     isSideBarCollapse: false,
     fileList: [],
     currentFile: "",
-    currentTag: "other"
+    currentTag: "other",
+    currentStatistics: {}
 }
 
 const mutations = {
@@ -33,6 +34,22 @@ const mutations = {
                 return;
             }
         }
+    },
+    addStatistics(state, key) {
+        if (state.currentStatistics[key]) {
+            state.currentStatistics[key] += 1;
+        } else {
+            state.currentStatistics[key] = 1;
+        }
+    },
+    subStatistics(state, key) {
+        state.currentStatistics[key] -= 1;
+        if (state.currentStatistics[key] === 0) {
+            delete state.currentStatistics[key]
+        }
+    },
+    changeStatistics(state, payload) {
+        state.currentStatistics = payload;
     }
 }
 
