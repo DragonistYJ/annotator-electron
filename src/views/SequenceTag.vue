@@ -1,7 +1,27 @@
 <template>
   <el-container>
     <el-aside>
-      <FilenameItem v-for="(item,idx) in fileList" :key="idx" :filename="item.filename" :filepath="item.filepath"/>
+      <el-table
+          :data="fileList"
+          style="width: 100%"
+          height="92%">
+        <el-table-column
+            label="文件名"
+            width="180">
+          <template slot-scope="scope">
+            <span style="margin-left: 10px">{{ scope.row.filename }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作">
+          <template slot-scope="scope">
+            <el-button size="mini" type="primary" icon="el-icon-edit" circle
+                       @click="changeCurrentFile(scope.row.filepath);"/>
+            <el-button size="mini" type="danger" icon="el-icon-delete" circle
+                       @click="removeFilename({'filename': scope.row.filename, 'filepath':scope.row.filepath})"/>
+          </template>
+        </el-table-column>
+      </el-table>
+
       <el-row type="flex" align="middle" justify="center">
         <el-button size="small" type="primary" @click="selectDir"
                    style="margin-top: 1em">
@@ -21,10 +41,12 @@
           </el-col>
         </el-row>
 
-        <Sentence v-for="(item, idx) in documentShowed" :key="idx" :tokens="item"/>
+        <el-main style="border: none; height: 88%; padding: 0">
+          <Sentence v-for="(item, idx) in documentShowed" :key="idx" :tokens="item"/>
+        </el-main>
 
         <el-row type="flex" justify="center" align="middle">
-          <el-col :span="20">
+          <el-col :span="18">
             <el-pagination
                 @size-change="pageSizeChange"
                 @current-change="pageCurrentChange"
@@ -35,13 +57,32 @@
                 :total="document.length">
             </el-pagination>
           </el-col>
-          <el-col :span="4">
+          <el-col :span="3">
             <el-button type="success" @click="commitChange">
               提交修改
             </el-button>
           </el-col>
+          <el-col :span="3">
+            <el-button type="primary" @click="statisticsShow = true">
+              标注统计
+            </el-button>
+          </el-col>
         </el-row>
       </el-main>
+
+      <el-drawer
+          title="标注统计"
+          :visible.sync="statisticsShow"
+          direction="rtl">
+        <el-descriptions :column="1" border style="margin: 1em">
+          <el-descriptions-item v-for="(value, key, index) in statistics" :key="index">
+            <template slot="label">
+              {{ key }}
+            </template>
+            {{ value }}
+          </el-descriptions-item>
+        </el-descriptions>
+      </el-drawer>
     </el-container>
   </el-container>
 </template>
@@ -49,20 +90,21 @@
 <script>
 import {mapMutations, mapState} from 'vuex';
 import {ipcRenderer} from "electron";
-import FilenameItem from "@/components/sequence-tag/Filenametem";
 import Sentence from "@/components/sequence-tag/Sentence";
 
 export default {
   name: "SequenceTag",
-  components: {Sentence, FilenameItem},
+  components: {Sentence},
   data() {
     return {
-      filenameShow: false,
+      fileCloseShow: false,
+      statisticsShow: false,
       documentPage: 1,
       documentPageSize: 10,
       document: [],
+      statistics: {},
       tags: ['other', 'url', 'email', 'domain', 'ipv4', 'hash', 'mac_address', 'file_path',
-        'registry_key_path', 'cve', 'asn', 'bitcoin_address', 'att&ck']
+        'registry_key_path', 'cve', 'asn', 'bitcoin_address', 'attack']
     }
   },
   computed: {
@@ -70,7 +112,7 @@ export default {
       isSideBarCollapse: state => state.sequenceTag.isSideBarCollapse,
       fileList: state => state.sequenceTag.fileList,
       currentFile: state => state.sequenceTag.currentFile,
-      currentTag: state => state.sequenceTag.currentTag
+      currentTag: state => state.sequenceTag.currentTag,
     }),
     documentShowed: function () {
       let start = (this.documentPage - 1) * this.documentPageSize;
@@ -83,7 +125,8 @@ export default {
       clearFileList: 'sequenceTag/clearFileList',
       addFilename: 'sequenceTag/addFilename',
       removeFilename: 'sequenceTag/removeFilename',
-      changeCurrentTag: 'sequenceTag/changeCurrentTag'
+      changeCurrentTag: 'sequenceTag/changeCurrentTag',
+      changeCurrentFile: 'sequenceTag/changeCurrentFile'
     }),
     pageSizeChange(size) {
       this.documentPageSize = size;
@@ -126,8 +169,10 @@ export default {
   watch: {
     currentFile(newVal) {
       const fs = require('fs');
-      fs.readFile(newVal, 'utf8', (err, data) => {
-        this.document = JSON.parse(data);
+      fs.readFile(newVal, 'utf8', (err, result) => {
+        let data = JSON.parse(result);
+        this.document = data.document;
+        this.statistics = data.statistics;
       });
     }
   }
