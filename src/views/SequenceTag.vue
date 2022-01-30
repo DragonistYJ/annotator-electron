@@ -29,8 +29,14 @@
         </el-button>
       </el-row>
     </el-aside>
+
     <el-container>
       <el-main>
+        <el-breadcrumb separator-class="el-icon-arrow-right" style="margin-bottom: 1em">
+          <el-breadcrumb-item :to="{ path: 'menu' }">菜单栏</el-breadcrumb-item>
+          <el-breadcrumb-item>{{ currentFile }}</el-breadcrumb-item>
+        </el-breadcrumb>
+
         <el-row type="flex" style="margin-bottom: 1em">
           <el-col>
             <el-button v-for="item in tags" :key="item" size="small" @click="tagClick(item)"
@@ -41,8 +47,77 @@
           </el-col>
         </el-row>
 
-        <el-main style="border: none; height: 88%; padding: 0">
-          <Sentence v-for="(item, idx) in documentShowed" :key="idx" :tokens="item"/>
+        <el-main style="border: none; height: 85%; padding: 0">
+          <el-row v-for="(item, idx) in documentShowed" :key="idx">
+            <el-col :span="22">
+              <Sentence :tokens="item"/>
+            </el-col>
+            <el-col :span="2">
+              <el-button size="mini" @click="openEditDialog(item, (documentPage-1) * documentPageSize + idx)">
+                编辑
+              </el-button>
+            </el-col>
+          </el-row>
+
+          <!--编辑句子的弹窗-->
+          <el-dialog title="编辑句子" :visible.sync="editDialogVisible">
+            <el-row type="flex" align="middle" justify="center">
+              <el-col>
+                <el-popover placement="top" trigger="click" width="1000"
+                            v-for="(item,idx) in editingSentence" :key="idx">
+                  <el-row type="flex" align="middle" justify="center">
+                    <el-col :span="2" v-if="idx !== 0">
+                      <el-button size="mini" @click="mergeToken(idx)">合并前词</el-button>
+                    </el-col>
+                    <el-col :span="2" v-if="idx !== editingSentence.length -1">
+                      <el-button size="mini" @click="mergeToken(idx + 1)">合并后词</el-button>
+                    </el-col>
+                    <el-col :span="2" v-if="idx !== 0">
+                      <el-button size="mini" @click="splitSentence(idx-1)">前分句</el-button>
+                    </el-col>
+                    <el-col :span="2" v-if="idx !== editingSentence.length -1">
+                      <el-button size="mini" @click="splitSentence(idx)">后分句</el-button>
+                    </el-col>
+                    <el-col :span="2">
+                      <el-button size="mini" @click="deleteToken(idx)">删除</el-button>
+                    </el-col>
+                    <el-col :span="10">
+                      <el-input placeholder="请输入内容" v-model="newWord">
+                        <template slot="prepend">
+                          <el-button size="mini" @click="insertToken(idx)">前插入</el-button>
+                        </template>
+                        <template slot="append">
+                          <el-button size="mini" @click="insertToken(idx + 1)">后插入</el-button>
+                        </template>
+                      </el-input>
+                    </el-col>
+                    <el-col :span="4">
+                      <el-input v-model="item.word" placeholder="请输入内容"/>
+                    </el-col>
+                  </el-row>
+                  <el-button slot="reference" size="small" style="margin-right: 0.4em; margin-bottom: 0.4em">
+                    {{ item.word }}
+                  </el-button>
+                </el-popover>
+              </el-col>
+            </el-row>
+            <el-row type="flex" style="margin-top: 1em">
+              <el-col :span="4" v-if="editingSentenceIdx !== 0">
+                <el-button type="primary" size="medium" @click="mergePrevious">
+                  合并前句
+                </el-button>
+              </el-col>
+              <el-col :span="4" v-if="editingSentenceIdx !== document.length-1">
+                <el-button type="primary" size="medium" @click="mergeNext">
+                  合并后句
+                </el-button>
+              </el-col>
+            </el-row>
+            <div slot="footer" class="dialog-footer">
+              <el-button @click="editDialogVisible = false">取 消</el-button>
+              <el-button type="primary" @click="dialogConfirm">确 定</el-button>
+            </div>
+          </el-dialog>
         </el-main>
 
         <el-row type="flex" justify="center" align="middle">
@@ -106,11 +181,15 @@ export default {
     return {
       fileCloseShow: false,
       statisticsShow: false,
+      editDialogVisible: false,
       documentPage: 1,
       documentPageSize: 10,
       document: [],
+      editingSentence: [],
+      editingSentenceIdx: 1,
+      newWord: '',
       tags: ['other', 'url', 'email', 'domain', 'ipv4', 'hash', 'mac_address', 'file_path',
-        'registry_key_path', 'cve', 'asn', 'bitcoin_address', 'attack']
+        'registry_key_path', 'cve', 'asn', 'bitcoin_address', 'attack', 'malware']
     }
   },
   computed: {
@@ -195,13 +274,53 @@ export default {
           }
         })
       })
-    }
+    },
+    openEditDialog(sentence, idx) {
+      this.editingSentence = sentence;
+      this.editingSentenceIdx = idx;
+      this.editDialogVisible = true;
+    },
+    dialogConfirm() {
+      this.commitChange();
+      this.editDialogVisible = false;
+    },
+    mergeNext() {
+      this.document[this.editingSentenceIdx].push(...this.document[this.editingSentenceIdx + 1]);
+      this.document.splice(this.editingSentenceIdx + 1, 1);
+      this.commitChange();
+      this.editDialogVisible = false;
+    },
+    mergePrevious() {
+      this.document[this.editingSentenceIdx - 1].push(...this.document[this.editingSentenceIdx]);
+      this.document.splice(this.editingSentenceIdx, 1);
+      this.commitChange();
+      this.editDialogVisible = false;
+    },
+    splitSentence(idx) {
+      let newSentence = this.editingSentence.splice(idx + 1, this.editingSentence.length - idx);
+      this.document.splice(this.editingSentenceIdx + 1, 0, newSentence);
+      this.commitChange();
+      this.editDialogVisible = false;
+    },
+    deleteToken(idx) {
+      this.editingSentence.splice(idx, 1);
+      this.commitChange();
+    },
+    mergeToken(idx) {
+      let token = this.editingSentence.splice(idx, 1)[0];
+      this.editingSentence[idx - 1]['word'] += token['word'];
+      this.commitChange();
+    },
+    insertToken(idx) {
+      this.editingSentence.splice(idx, 0, {'word': this.newWord, 'tag': 'other'});
+      this.commitChange();
+      this.newWord = "";
+    },
   },
   watch: {
     currentFile(newVal) {
       this.documentPage = 1;
 
-      const fs = require('fs');
       fs.readFile(newVal, 'utf8', (err, result) => {
         let data = JSON.parse(result);
         this.document = data.document;
