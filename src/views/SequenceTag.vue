@@ -237,7 +237,29 @@ export default {
     tagClick(tag) {
       this.changeCurrentTag(tag);
     },
+    checkStatistics() {
+      let statistics = {};
+      for (let i = 0; i < this.document.length; i++) {
+        for (let j = 0; j < this.document[i].length; j++) {
+          let tag = this.document[i][j]['tag'];
+          if (statistics[tag]) {
+            statistics[tag] += 1;
+          } else {
+            statistics[tag] = 1;
+          }
+        }
+      }
+      if (JSON.stringify(statistics) !== JSON.stringify(this.currentStatistics)) {
+        this.changeStatistics(statistics);
+        this.$message({
+          showClose: true,
+          message: '更新统计数据',
+          type: 'success'
+        });
+      }
+    },
     commitChange() {
+      this.checkStatistics();
       fs.writeFile(this.currentFile, JSON.stringify({
         document: this.document,
         statistics: this.currentStatistics
