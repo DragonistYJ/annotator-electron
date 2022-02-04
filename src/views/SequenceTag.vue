@@ -67,10 +67,10 @@
                             v-for="(item,idx) in editingSentence" :key="idx">
                   <el-row type="flex" align="middle" justify="center">
                     <el-col :span="2" v-if="idx !== 0">
-                      <el-button size="mini" @click="mergeToken(idx)">合并前词</el-button>
+                      <el-button size="mini" @click="mergeToken(idx, item.tag)">合并前词</el-button>
                     </el-col>
                     <el-col :span="2" v-if="idx !== editingSentence.length -1">
-                      <el-button size="mini" @click="mergeToken(idx + 1)">合并后词</el-button>
+                      <el-button size="mini" @click="mergeToken(idx + 1, item.tag)">合并后词</el-button>
                     </el-col>
                     <el-col :span="2" v-if="idx !== 0">
                       <el-button size="mini" @click="splitSentence(idx-1)">前分句</el-button>
@@ -251,10 +251,10 @@ export default {
       }
       if (JSON.stringify(statistics) !== JSON.stringify(this.currentStatistics)) {
         this.changeStatistics(statistics);
-        this.$message({
-          showClose: true,
-          message: '更新统计数据',
-          type: 'success'
+        this.$notify({
+          title: '更新统计数据',
+          type: 'success',
+          duration: 1500
         });
       }
     },
@@ -265,10 +265,10 @@ export default {
         statistics: this.currentStatistics
       }), 'utf8', err => {
         if (!err) {
-          this.$message({
-            showClose: true,
-            message: '保存成功',
-            type: 'success'
+          this.$notify({
+            title: '保存成功',
+            type: 'success',
+            duration: 1500
           });
         }
       })
@@ -288,10 +288,10 @@ export default {
         }), 'utf8', err => {
           if (!err) {
             this.removeFilename({'filename': path.basename(this.currentFile), 'filepath': this.currentFile})
-            this.$message({
-              showClose: true,
-              message: '另存成功',
-              type: 'success'
+            this.$notify({
+              title: '另存成功',
+              type: 'success',
+              duration: 1500
             });
           }
         })
@@ -328,9 +328,10 @@ export default {
       this.editingSentence.splice(idx, 1);
       this.commitChange();
     },
-    mergeToken(idx) {
+    mergeToken(idx, tag) {
       let token = this.editingSentence.splice(idx, 1)[0];
       this.editingSentence[idx - 1]['word'] += token['word'];
+      this.editingSentence[idx - 1]['tag'] = tag;
       this.commitChange();
     },
     insertToken(idx) {
