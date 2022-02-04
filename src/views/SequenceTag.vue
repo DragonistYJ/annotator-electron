@@ -138,8 +138,13 @@
             </el-button>
           </el-col>
           <el-col :span="2">
-            <el-button type="primary" @click="saveAnotherPlace" size="small">
+            <el-button type="success" @click="saveAnotherPlace" size="small">
               另存为
+            </el-button>
+          </el-col>
+          <el-col :span="2">
+            <el-button type="primary" @click="oneKeyForTotalVisible = true" size="small">
+              一键全标
             </el-button>
           </el-col>
           <el-col :span="2">
@@ -149,6 +154,29 @@
           </el-col>
         </el-row>
       </el-main>
+
+      <el-dialog title="一键全标" :visible.sync="oneKeyForTotalVisible">
+        <el-form label-width="15%">
+          <el-form-item label="单词">
+            <el-input v-model="totalTag.word" placeholder="请输入内容" clearable/>
+          </el-form-item>
+          <el-form-item label="标签">
+            <el-select v-model="totalTag.tag" placeholder="请选择">
+              <el-option v-for="(item,idx) in tags" :key="idx" :label="item" :value="item"/>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="区分大小写">
+            <el-radio-group v-model="totalTag.caseSensitive" size="small">
+              <el-radio label="true" border>是</el-radio>
+              <el-radio label="false" border>否</el-radio>
+            </el-radio-group>
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" @click="oneKeyForTotal">确认</el-button>
+            <el-button @click="hideOneKeyForTotalDialog">取消</el-button>
+          </el-form-item>
+        </el-form>
+      </el-dialog>
 
       <el-drawer
           title="标注统计"
@@ -182,12 +210,18 @@ export default {
       fileCloseShow: false,
       statisticsShow: false,
       editDialogVisible: false,
+      oneKeyForTotalVisible: false,
       documentPage: 1,
       documentPageSize: 10,
       document: [],
       editingSentence: [],
       editingSentenceIdx: 1,
       newWord: '',
+      totalTag: {
+        word: '',
+        tag: 'other',
+        caseSensitive: 'false'
+      },
       tags: ['other', 'url', 'email', 'domain', 'ipv4', 'hash', 'mac_address', 'file_path',
         'registry_key_path', 'cve', 'asn', 'bitcoin_address', 'attack', 'malware']
     }
@@ -339,6 +373,24 @@ export default {
       this.commitChange();
       this.newWord = "";
     },
+    hideOneKeyForTotalDialog() {
+      this.totalTag.word = '';
+      this.totalTag.tag = 'other';
+      this.totalTag.caseSensitive = 'false';
+      this.oneKeyForTotalVisible = false;
+    },
+    oneKeyForTotal() {
+      for (let i = 0; i < this.document.length; i++) {
+        for (let j = 0; j < this.document[i].length; j++) {
+          if (this.totalTag.caseSensitive === 'false' && this.document[i][j]['word'].toLowerCase() === this.totalTag.word.toLowerCase()) {
+            this.document[i][j]['tag'] = this.totalTag.tag;
+          } else if (this.totalTag.caseSensitive === 'true' && this.document[i][j]['word'] === this.totalTag.word) {
+            this.document[i][j]['tag'] = this.totalTag.tag;
+          }
+        }
+      }
+      this.hideOneKeyForTotalDialog();
+    }
   },
   watch: {
     currentFile(newVal) {
