@@ -48,14 +48,20 @@
         </el-row>
 
         <el-main style="border: none; height: 85%; padding: 0">
-          <el-row v-for="(item, idx) in documentShowed" :key="idx">
+          <el-row v-for="(item, idx) in documentShowed" :key="idx" type="flex">
             <el-col :span="22">
               <Sentence :tokens="item"/>
             </el-col>
             <el-col :span="2">
-              <el-button size="mini" @click="openEditDialog(item, (documentPage-1) * documentPageSize + idx)">
+              <el-button size="mini" @click="openEditDialog(item, (documentPage-1) * documentPageSize + idx)"
+              style="margin-right: 0.5em">
                 编辑
               </el-button>
+              <el-popconfirm title="确认删除该句？" @confirm="deleteSentence(idx)">
+                <el-button size="mini" type="danger" slot="reference">
+                  删除
+                </el-button>
+              </el-popconfirm>
             </el-col>
           </el-row>
 
@@ -121,7 +127,7 @@
         </el-main>
 
         <el-row type="flex" justify="center" align="middle">
-          <el-col :span="18">
+          <el-col :span="16">
             <el-pagination
                 @size-change="pageSizeChange"
                 @current-change="pageCurrentChange"
@@ -132,22 +138,16 @@
                 :total="document.length">
             </el-pagination>
           </el-col>
-          <el-col :span="2">
+          <el-col :span="8">
             <el-button type="success" @click="commitChange" size="small">
               提交修改
             </el-button>
-          </el-col>
-          <el-col :span="2">
             <el-button type="success" @click="saveAnotherPlace" size="small">
               另存为
             </el-button>
-          </el-col>
-          <el-col :span="2">
             <el-button type="primary" @click="oneKeyForTotalVisible = true" size="small">
               一键全标
             </el-button>
-          </el-col>
-          <el-col :span="2">
             <el-button type="primary" @click="statisticsShow = true" size="small">
               标注统计
             </el-button>
@@ -389,8 +389,21 @@ export default {
           }
         }
       }
+      this.$notify({
+        title: '已全部标注',
+        type: 'success',
+        duration: 1500
+      });
       this.hideOneKeyForTotalDialog();
-    }
+    },
+    deleteSentence(idx) {
+      this.document.splice(idx, 1);
+      this.$notify({
+        title: '删除成功',
+        type: 'success',
+        duration: 1500
+      });
+    },
   },
   watch: {
     currentFile(newVal) {
