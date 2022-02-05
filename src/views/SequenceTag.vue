@@ -53,15 +53,12 @@
               <Sentence :tokens="item"/>
             </el-col>
             <el-col :span="2">
-              <el-button size="mini" @click="openEditDialog(item, (documentPage-1) * documentPageSize + idx)"
-              style="margin-right: 0.5em">
+              <el-button size="mini" @click="openEditDialog(item, (documentPage-1) * documentPageSize + idx)">
                 编辑
               </el-button>
-              <el-popconfirm title="确认删除该句？" @confirm="deleteSentence((documentPage-1) * documentPageSize + idx)">
-                <el-button size="mini" type="danger" slot="reference">
-                  删除
-                </el-button>
-              </el-popconfirm>
+              <el-button size="mini" type="danger" @click="deleteSentence((documentPage-1) * documentPageSize + idx)">
+                删除
+              </el-button>
             </el-col>
           </el-row>
 
