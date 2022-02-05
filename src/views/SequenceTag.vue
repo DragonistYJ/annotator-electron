@@ -57,7 +57,7 @@
               style="margin-right: 0.5em">
                 编辑
               </el-button>
-              <el-popconfirm title="确认删除该句？" @confirm="deleteSentence(idx)">
+              <el-popconfirm title="确认删除该句？" @confirm="deleteSentence((documentPage-1) * documentPageSize + idx)">
                 <el-button size="mini" type="danger" slot="reference">
                   删除
                 </el-button>
