@@ -185,10 +185,10 @@
       <el-dialog title="一键全标" :visible.sync="oneKeyForTotalVisible">
         <el-form label-width="15%">
           <el-form-item label="单词">
-            <el-input v-model="totalTag.word" placeholder="请输入内容" clearable/>
+            <el-input v-model="totalTag.word" placeholder="请输入内容" clearable @input="oneKeyInputChange"/>
           </el-form-item>
           <el-form-item label="满足条件单词个数">
-            <el-input placeholder="0" v-model="fitWordNumber" :disabled="true"/>
+            <el-input placeholder="0" v-model="totalTag.fitWordNumber" :disabled="true"/>
           </el-form-item>
           <el-form-item label="标签">
             <el-select v-model="totalTag.tag" placeholder="请选择">
@@ -251,6 +251,7 @@ export default {
       newWord: '',
       totalTag: {
         word: '',
+        fitWordNumber: 0,
         tag: 'other',
         caseSensitive: 'false'
       },
@@ -272,19 +273,6 @@ export default {
     documentShowed: function () {
       let start = (this.documentPage - 1) * this.documentPageSize;
       return this.document.slice(start, start + this.documentPageSize);
-    },
-    fitWordNumber: function () {
-      let count = 0;
-      for (let i = 0; i < this.document.length; i++) {
-        for (let j = 0; j < this.document[i].length; j++) {
-          if (this.totalTag.caseSensitive === 'false' && this.document[i][j]['word'].toLowerCase() === this.totalTag.word.toLowerCase()) {
-            count += 1;
-          } else if (this.totalTag.caseSensitive === 'true' && this.document[i][j]['word'] === this.totalTag.word) {
-            count += 1;
-          }
-        }
-      }
-      return count;
     }
   },
   methods: {
@@ -457,6 +445,7 @@ export default {
     },
     hideOneKeyForTotalDialog() {
       this.totalTag.word = '';
+      this.totalTag.fitWordNumber = 0;
       this.totalTag.tag = 'other';
       this.totalTag.caseSensitive = 'false';
       this.oneKeyForTotalVisible = false;
@@ -477,6 +466,19 @@ export default {
         duration: 1500
       });
       this.hideOneKeyForTotalDialog();
+    },
+    oneKeyInputChange() {
+      let count = 0;
+      for (let i = 0; i < this.document.length; i++) {
+        for (let j = 0; j < this.document[i].length; j++) {
+          if (this.totalTag.caseSensitive === 'false' && this.document[i][j]['word'].toLowerCase() === this.totalTag.word.toLowerCase()) {
+            count += 1;
+          } else if (this.totalTag.caseSensitive === 'true' && this.document[i][j]['word'] === this.totalTag.word) {
+            count += 1;
+          }
+        }
+      }
+      this.totalTag.fitWordNumber = count;
     },
     deleteSentence(idx) {
       this.document.splice(idx, 1);
