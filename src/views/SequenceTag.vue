@@ -49,7 +49,10 @@
 
         <el-main style="border: none; height: 85%; padding: 0">
           <el-row v-for="(item, idx) in documentShowed" :key="idx" type="flex">
-            <el-col :span="22">
+            <el-col :span="1">
+              <el-checkbox v-model="checkboxStates[idx]"/>
+            </el-col>
+            <el-col :span="21">
               <Sentence :tokens="item"/>
             </el-col>
             <el-col :span="2">
@@ -142,6 +145,9 @@
             <el-button type="success" @click="saveAnotherPlace" size="small">
               另存为
             </el-button>
+            <el-button type="primary" @click="batchOperationVisible = true" size="small">
+              批量操作
+            </el-button>
             <el-button type="primary" @click="oneKeyForTotalVisible = true" size="small">
               一键全标
             </el-button>
@@ -152,10 +158,37 @@
         </el-row>
       </el-main>
 
+      <el-dialog title="批量操作" :visible.sync="batchOperationVisible">
+        <el-row type="flex" align="middle" justify="center">
+          <el-col>
+            <el-input placeholder="请输入内容" v-model="batchOperation.word">
+              <template slot="prepend">
+                <el-button @click="batchInsertToken(0)">插入开头</el-button>
+              </template>
+              <template slot="append">
+                <el-button @click="batchInsertToken(-1)">插入末尾</el-button>
+              </template>
+            </el-input>
+          </el-col>
+        </el-row>
+        <el-row type="flex" align="middle" style="margin-top: 1em">
+          <el-col>
+            <el-button type="danger" size="medium" @click="batchDeleteToken(0)">删除第一个词</el-button>
+            <el-button type="danger" size="medium" @click="batchDeleteToken(-1)">删除最后一个词</el-button>
+          </el-col>
+        </el-row>
+        <span slot="footer" class="dialog-footer">
+          <el-button type="primary" @click="hideBatchOperationDialog">确 定</el-button>
+        </span>
+      </el-dialog>
+
       <el-dialog title="一键全标" :visible.sync="oneKeyForTotalVisible">
         <el-form label-width="15%">
           <el-form-item label="单词">
             <el-input v-model="totalTag.word" placeholder="请输入内容" clearable/>
+          </el-form-item>
+          <el-form-item label="满足条件单词个数">
+            <el-input placeholder="0" v-model="fitWordNumber" :disabled="true"/>
           </el-form-item>
           <el-form-item label="标签">
             <el-select v-model="totalTag.tag" placeholder="请选择">
@@ -208,6 +241,8 @@ export default {
       statisticsShow: false,
       editDialogVisible: false,
       oneKeyForTotalVisible: false,
+      checkboxStates: [false, false, false, false, false, false, false, false, false, false],
+      batchOperationVisible: false,
       documentPage: 1,
       documentPageSize: 10,
       document: [],
@@ -218,6 +253,9 @@ export default {
         word: '',
         tag: 'other',
         caseSensitive: 'false'
+      },
+      batchOperation: {
+        word: '',
       },
       tags: ['other', 'url', 'email', 'domain', 'ipv4', 'hash', 'mac_address', 'file_path',
         'registry_key_path', 'cve', 'asn', 'bitcoin_address', 'attack', 'malware']
@@ -234,6 +272,19 @@ export default {
     documentShowed: function () {
       let start = (this.documentPage - 1) * this.documentPageSize;
       return this.document.slice(start, start + this.documentPageSize);
+    },
+    fitWordNumber: function () {
+      let count = 0;
+      for (let i = 0; i < this.document.length; i++) {
+        for (let j = 0; j < this.document[i].length; j++) {
+          if (this.totalTag.caseSensitive === 'false' && this.document[i][j]['word'].toLowerCase() === this.totalTag.word.toLowerCase()) {
+            count += 1;
+          } else if (this.totalTag.caseSensitive === 'true' && this.document[i][j]['word'] === this.totalTag.word) {
+            count += 1;
+          }
+        }
+      }
+      return count;
     }
   },
   methods: {
@@ -248,9 +299,16 @@ export default {
     }),
     pageSizeChange(size) {
       this.documentPageSize = size;
+      this.checkboxStates = [];
+      for (let i = 0; i < size; i++) {
+        this.checkboxStates.push(false);
+      }
     },
     pageCurrentChange(page) {
       this.documentPage = page;
+      for (let i = 0; i < this.checkboxStates.length; i++) {
+        this.checkboxStates[i] = false;
+      }
     },
     selectDir() {
       ipcRenderer.invoke("selectDir").then(result => {
@@ -359,6 +417,15 @@ export default {
       this.editingSentence.splice(idx, 1);
       this.commitChange();
     },
+    batchDeleteToken(position) {
+      for (let i = 0; i < this.checkboxStates.length; i++) {
+        if (this.checkboxStates[i]) {
+          let idx = (this.documentPage - 1) * this.documentPageSize + i;
+          this.document[idx].splice(position, 1);
+        }
+      }
+      this.commitChange();
+    },
     mergeToken(idx, tag) {
       let token = this.editingSentence.splice(idx, 1)[0];
       this.editingSentence[idx - 1]['word'] += token['word'];
@@ -369,6 +436,24 @@ export default {
       this.editingSentence.splice(idx, 0, {'word': this.newWord, 'tag': 'other'});
       this.commitChange();
       this.newWord = "";
+    },
+    batchInsertToken(position) {
+      for (let i = 0; i < this.checkboxStates.length; i++) {
+        if (this.checkboxStates[i]) {
+          let idx = (this.documentPage - 1) * this.documentPageSize + i;
+          if (position === -1) {
+            this.document[idx].push({'word': this.batchOperation.word, 'tag': 'other'});
+          } else {
+            this.document[idx].splice(position, 0, {'word': this.batchOperation.word, 'tag': 'other'});
+          }
+        }
+      }
+      this.commitChange();
+      this.batchOperation.word = "";
+    },
+    hideBatchOperationDialog() {
+      this.batchOperation.word = '';
+      this.batchOperationVisible = false;
     },
     hideOneKeyForTotalDialog() {
       this.totalTag.word = '';
@@ -400,7 +485,7 @@ export default {
         type: 'success',
         duration: 1500
       });
-    },
+    }
   },
   watch: {
     currentFile(newVal) {
