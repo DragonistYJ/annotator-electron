@@ -127,7 +127,10 @@
         </el-main>
 
         <el-row type="flex" justify="center" align="middle">
-          <el-col :span="16">
+          <el-col :span="2">
+            <el-button size="mini" type="success" @click="toggleCheckboxStates">全选</el-button>
+          </el-col>
+          <el-col :span="13">
             <el-pagination
                 @size-change="pageSizeChange"
                 @current-change="pageCurrentChange"
@@ -138,7 +141,7 @@
                 :total="document.length">
             </el-pagination>
           </el-col>
-          <el-col :span="8">
+          <el-col :span="9">
             <el-button type="success" @click="commitChange" size="small">
               提交修改
             </el-button>
@@ -159,20 +162,38 @@
       </el-main>
 
       <el-dialog title="批量操作" :visible.sync="batchOperationVisible">
-        <el-row type="flex" align="middle" justify="center">
-          <el-col>
-            <el-input placeholder="请输入内容" v-model="batchOperation.word">
-              <template slot="prepend">
-                <el-button @click="batchInsertToken(0)">插入开头</el-button>
-              </template>
-              <template slot="append">
-                <el-button @click="batchInsertToken(-1)">插入末尾</el-button>
-              </template>
-            </el-input>
-          </el-col>
+        <el-row type="flex" align="middle">
+          <el-form :inline="true" class="demo-form-inline">
+            <el-form-item>
+              <el-input placeholder="请输入内容" v-model="batchOperation.word">
+                <template slot="prepend">
+                  <el-button @click="batchInsertToken(0)">插入开头</el-button>
+                </template>
+                <template slot="append">
+                  <el-button @click="batchInsertToken(-1)">插入末尾</el-button>
+                </template>
+              </el-input>
+            </el-form-item>
+            <el-form-item>
+              <el-select v-model="batchOperation.tag" placeholder="请选择">
+                <el-option v-for="item in tags" :key="item" :label="item" :value="item"/>
+              </el-select>
+            </el-form-item>
+          </el-form>
         </el-row>
-        <el-row type="flex" align="middle" style="margin-top: 1em">
+        <el-row type="flex" align="middle">
+          <el-form :inline="true" class="demo-form-inline">
+            <el-form-item label="合并之后所有">
+              <el-input-number v-model="batchOperation.mergeStartIdx" :min="0" :max="10"/>
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" size="medium" @click="batchMergeAfterAll">确认</el-button>
+            </el-form-item>
+          </el-form>
+        </el-row>
+        <el-row type="flex" align="middle">
           <el-col>
+            <el-button type="warning" size="medium" @click="batchClearBlank">去除空白词</el-button>
             <el-button type="danger" size="medium" @click="batchDeleteToken(0)">删除第一个词</el-button>
             <el-button type="danger" size="medium" @click="batchDeleteToken(-1)">删除最后一个词</el-button>
           </el-col>
@@ -257,6 +278,8 @@ export default {
       },
       batchOperation: {
         word: '',
+        tag: 'other',
+        mergeStartIdx: 0,
       },
       tags: ['other', 'url', 'email', 'domain', 'ipv4', 'hash', 'mac_address', 'file_path',
         'registry_key_path', 'cve', 'asn', 'bitcoin_address', 'attack', 'malware']
@@ -296,6 +319,19 @@ export default {
       this.documentPage = page;
       for (let i = 0; i < this.checkboxStates.length; i++) {
         this.checkboxStates[i] = false;
+      }
+    },
+    toggleCheckboxStates() {
+      let flag = false;
+      for (let i = 0; i < this.checkboxStates.length; i++) {
+        if (!this.checkboxStates[i]) {
+          flag = true;
+          break;
+        }
+      }
+      this.checkboxStates = [];
+      for (let i = 0; i < this.documentPageSize; i++) {
+        this.checkboxStates.push(flag);
       }
     },
     selectDir() {
@@ -430,17 +466,50 @@ export default {
         if (this.checkboxStates[i]) {
           let idx = (this.documentPage - 1) * this.documentPageSize + i;
           if (position === -1) {
-            this.document[idx].push({'word': this.batchOperation.word, 'tag': 'other'});
+            this.document[idx].push({'word': this.batchOperation.word, 'tag': this.batchOperation.tag});
           } else {
-            this.document[idx].splice(position, 0, {'word': this.batchOperation.word, 'tag': 'other'});
+            this.document[idx].splice(position, 0, {'word': this.batchOperation.word, 'tag': this.batchOperation.tag});
           }
         }
       }
       this.commitChange();
       this.batchOperation.word = "";
     },
+    batchClearBlank() {
+      for (let i = 0; i < this.checkboxStates.length; i++) {
+        if (this.checkboxStates[i]) {
+          let idx = (this.documentPage - 1) * this.documentPageSize + i;
+          for (let j = 0; j < this.document[idx].length; j++) {
+            if (this.document[idx][j]['word'] === '') {
+              this.document[idx].splice(j, 1);
+              j--;
+            }
+          }
+        }
+      }
+      this.commitChange();
+    },
+    batchMergeAfterAll() {
+      for (let i = 0; i < this.checkboxStates.length; i++) {
+        if (this.checkboxStates[i]) {
+          let idx = (this.documentPage - 1) * this.documentPageSize + i;
+          let start = this.batchOperation.mergeStartIdx;
+          while (this.document[idx].length > start + 1) {
+            this.document[idx][start]['word'] += this.document[idx][start + 1]['word'];
+            this.document[idx].splice(start + 1, 1);
+          }
+        }
+      }
+      this.$notify({
+        title: '合并成功',
+        type: 'success',
+        duration: 1500
+      });
+    },
     hideBatchOperationDialog() {
       this.batchOperation.word = '';
+      this.batchOperation.tag = 'other';
+      this.batchOperation.mergeStartIdx = 0;
       this.batchOperationVisible = false;
     },
     hideOneKeyForTotalDialog() {
