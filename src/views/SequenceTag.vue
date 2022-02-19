@@ -480,7 +480,7 @@ export default {
         if (this.checkboxStates[i]) {
           let idx = (this.documentPage - 1) * this.documentPageSize + i;
           for (let j = 0; j < this.document[idx].length; j++) {
-            if (this.document[idx][j]['word'] === '') {
+            if (this.document[idx][j]['word'] === '' || this.document[idx][j]['word'] === ' ') {
               this.document[idx].splice(j, 1);
               j--;
             }
