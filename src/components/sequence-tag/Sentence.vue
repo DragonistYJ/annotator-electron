@@ -1,5 +1,5 @@
 <template>
-  <el-row type="flex" style="margin-bottom: 1em" align="middle">
+  <el-row type="flex" align="middle">
     <el-col style="display: flex; flex-wrap: wrap">
       <div class="word" v-for="(item,idx) in tokens" :key="idx">
         <el-button type="text" @click="wordClick(item)"

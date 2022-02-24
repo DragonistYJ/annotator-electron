@@ -1,13 +1,13 @@
 <template>
   <el-container>
-    <el-aside>
+    <el-aside style="width: 240px">
       <el-table
           :data="fileList"
           style="width: 100%"
           height="92%">
         <el-table-column
             label="文件名"
-            width="180">
+            width="140">
           <template slot-scope="scope">
             <span style="margin-left: 10px">{{ scope.row.filename }}</span>
           </template>
@@ -48,7 +48,7 @@
         </el-row>
 
         <el-main style="border: none; height: 85%; padding: 0">
-          <el-row v-for="(item, idx) in documentShowed" :key="idx" type="flex">
+          <el-row v-for="(item, idx) in documentShowed" :key="idx" type="flex" style="padding-bottom: 0.5em; padding-top: 0.5em">
             <el-col :span="1">
               <el-checkbox v-model="checkboxStates[idx]"/>
             </el-col>
@@ -281,8 +281,7 @@ export default {
         tag: 'other',
         mergeStartIdx: 0,
       },
-      tags: ['other', 'url', 'email', 'domain', 'ipv4', 'hash', 'mac_address', 'file_path',
-        'registry_key_path', 'cve', 'asn', 'bitcoin_address', 'attack', 'malware']
+      tags: ['other', 'url', 'email', 'domain', 'ipv4', 'hash', 'mac_address', 'file', 'file_path', 'registry_key_path', 'cve', 'asn', 'bitcoin_address', 'attack', 'malware']
     }
   },
   computed: {
@@ -296,7 +295,7 @@ export default {
     documentShowed: function () {
       let start = (this.documentPage - 1) * this.documentPageSize;
       return this.document.slice(start, start + this.documentPageSize);
-    }
+    },
   },
   methods: {
     ...mapMutations({
