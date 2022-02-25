@@ -1,6 +1,6 @@
 <template>
   <el-container>
-    <el-aside style="width: 240px">
+    <el-aside style="width: 260px">
       <el-table
           :data="fileList"
           style="width: 100%"
@@ -184,7 +184,7 @@
         <el-row type="flex" align="middle">
           <el-form :inline="true" class="demo-form-inline">
             <el-form-item label="合并之后所有">
-              <el-input-number v-model="batchOperation.mergeStartIdx" :min="0" :max="10"/>
+              <el-input-number v-model="batchOperation.mergeStartIdx" :min="0"/>
             </el-form-item>
             <el-form-item>
               <el-button type="primary" size="medium" @click="batchMergeAfterAll">确认</el-button>
